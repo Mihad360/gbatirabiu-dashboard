@@ -7,13 +7,14 @@ export const baseApi = createApi({
   baseQuery: axiosBaseQuery({ baseUrl: process.env.NEXT_PUBLIC_API_URL || "" }),
   tagTypes: [
     "Auth",
-    "Order",
+    "Dashboard", // ← add
+    "Order", // ← add
+    "Review", // ← add
+    "Client", // ← add
+    "Content", // ← add
     "Service",
     "ProductItem",
     "Offer",
-    "Client",
-    "Content",
-    "Review",
   ],
   endpoints: () => ({}),
 });

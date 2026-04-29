@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const protectedRoutes = [
-//   "/dashboard",
+  //   "/dashboard",
   "/clients",
   "/orders",
   "/services",
@@ -20,6 +20,7 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const token = request.cookies.get("accessToken")?.value;
+  console.log(token);
 
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route),
@@ -39,7 +40,7 @@ export function proxy(request: NextRequest) {
   if (token && isPublicOnlyRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
-    return NextResponse.redirect(url); 
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();

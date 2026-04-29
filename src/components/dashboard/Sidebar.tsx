@@ -12,6 +12,8 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
+import { deleteCookie } from "cookies-next";
+import { useRouter } from "next/navigation";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -25,26 +27,25 @@ const navItems = [
 
 const Sidebar = () => {
   const pathname = usePathname();
+  const router = useRouter();
 
   const handleLogout = () => {
-    // TODO: dispatch logout — clear token from cookie/localStorage
-    window.location.href = "/login";
+    deleteCookie("accessToken");
+    router.push("/login");
   };
 
   return (
-    <aside className="fixed top-0 left-0 h-full w-55 bg-[#1a1a2e] flex flex-col z-50">
+    <aside className="fixed top-0 left-0 h-full w-[220px] bg-white border-r border-gray-100 flex flex-col z-50 shadow-sm">
       {/* Logo */}
-      <div className="flex items-center gap-2 px-5 py-5 border-b border-white/10">
+      <div className="flex items-center gap-2.5 px-5 py-5 border-b border-gray-100">
         <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
-          <span className="text-white text-xs font-bold">E</span>
+          <span className="text-white text-xs font-bold">💧</span>
         </div>
-        <span className="text-white font-semibold text-sm">
-          E-Laundry Admin
-        </span>
+        <span className="text-gray-800 font-bold text-sm">E-Laundry Admin</span>
       </div>
 
       {/* Nav Items */}
-      <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
+      <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -56,8 +57,8 @@ const Sidebar = () => {
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                 isActive
-                  ? "bg-primary text-white font-medium"
-                  : "text-gray-400 hover:text-white hover:bg-white/10"
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
               }`}
             >
               <Icon size={16} />
@@ -68,10 +69,10 @@ const Sidebar = () => {
       </nav>
 
       {/* Logout */}
-      <div className="px-3 py-4 border-t border-white/10">
+      <div className="px-3 py-4 border-t border-gray-100">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-400 hover:text-red-300 hover:bg-white/10 transition-colors w-full"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-500 hover:bg-red-50 transition-colors w-full"
         >
           <LogOut size={16} />
           Logout
