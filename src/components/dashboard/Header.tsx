@@ -2,7 +2,7 @@
 
 const Header = () => {
   return (
-    <header className="h-[60px] bg-white border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-40">
+    <header className="h-15 bg-white border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-40">
       <h1 className="text-base font-semibold text-gray-700">Admin Portal</h1>
 
       <div className="flex items-center gap-3">

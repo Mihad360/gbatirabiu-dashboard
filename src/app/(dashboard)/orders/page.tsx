@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, Download, Mail, X } from "lucide-react";
+import { Eye, Download, Mail } from "lucide-react";
 import GbTable from "@/forms/GBTable";
+import GbPagination from "@/forms/GBPagination";
+import GbModal from "@/forms/GBModal";
 
-// ── dummy data ────────────────────────────────────────────────
 const dummyOrders = [
   {
     _id: "1",
@@ -18,7 +19,7 @@ const dummyOrders = [
   },
   {
     _id: "2",
-    orderId: "ORD-001",
+    orderId: "ORD-002",
     user: "Alice Johnson",
     date: "2023-10-25",
     details: "Wash & Iron",
@@ -28,27 +29,34 @@ const dummyOrders = [
   },
   {
     _id: "3",
-    orderId: "ORD-001",
+    orderId: "ORD-003",
     user: "Alice Johnson",
     date: "2023-10-25",
     details: "Wash & Iron",
     items: 5,
     total: 25,
-    status: "pending",
+    status: "processing",
   },
   {
     _id: "4",
-    orderId: "ORD-001",
+    orderId: "ORD-004",
     user: "Alice Johnson",
     date: "2023-10-25",
     details: "Wash & Iron",
     items: 5,
     total: 25,
-    status: "pending",
+    status: "completed",
   },
 ];
 
 const statusTabs = ["All", "Pending", "Processing", "Completed", "Canceled"];
+const statusOptions = [
+  "Picked Up",
+  "Processing",
+  "Completed",
+  "Out for Delivery",
+  "Delivered",
+];
 
 const statusColors: Record<string, string> = {
   pending: "text-yellow-500",
@@ -60,104 +68,15 @@ const statusColors: Record<string, string> = {
 
 type TOrder = (typeof dummyOrders)[0];
 
-// ── Order Detail Modal ────────────────────────────────────────
-const statusOptions = [
-  "Picked Up",
-  "Processing",
-  "Completed",
-  "Out for Delivery",
-  "Delivered",
-];
+const ITEMS_PER_PAGE = 5;
 
-const OrderModal = ({
-  order,
-  onClose,
-}: {
-  order: TOrder;
-  onClose: () => void;
-}) => {
-  const [selectedStatus, setSelectedStatus] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
-
-  return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
-      <div className="bg-white rounded-xl w-[400px] shadow-xl">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h3 className="font-semibold text-gray-800">Order Management</h3>
-          <button onClick={onClose} className="text-red-500 hover:text-red-600">
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Details */}
-        <div className="px-6 py-4 flex flex-col gap-3 text-sm">
-          {[
-            { label: "Order ID", value: order.orderId },
-            { label: "User name", value: order.user },
-            { label: "Details", value: order.details },
-            { label: "Total Cost", value: `$${order.total}` },
-            { label: "Order date", value: order.date },
-            { label: "Total Items", value: order.items },
-          ].map((item) => (
-            <div key={item.label} className="flex justify-between">
-              <span className="text-gray-400">{item.label}</span>
-              <span className="text-gray-700 font-medium">{item.value}</span>
-            </div>
-          ))}
-
-          {/* Status row */}
-          <div className="flex justify-between items-center">
-            <span className="text-gray-400">Status</span>
-            <span className="text-yellow-500 font-medium capitalize">
-              {order.status}
-            </span>
-          </div>
-
-          {/* Change Status dropdown */}
-          <div className="relative mt-2">
-            <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className="w-full flex items-center justify-between border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-600 hover:border-primary transition"
-            >
-              {selectedStatus || "Change Status"}
-              <span>▾</span>
-            </button>
-            {showDropdown && (
-              <div className="absolute top-full left-0 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10 mt-1">
-                {statusOptions.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => {
-                      setSelectedStatus(s);
-                      setShowDropdown(false);
-                    }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Save button */}
-          {selectedStatus && (
-            <button className="w-full bg-primary text-white py-2.5 rounded-lg text-sm font-medium mt-1 hover:bg-primary-dark transition">
-              Update Status
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ── Main Orders Page ──────────────────────────────────────────
 const OrdersPage = () => {
   const [activeTab, setActiveTab] = useState("All");
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<TOrder | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const filtered = dummyOrders.filter((o) => {
     const matchTab =
@@ -167,6 +86,12 @@ const OrdersPage = () => {
       o.user.toLowerCase().includes(search.toLowerCase());
     return matchTab && matchSearch;
   });
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginated = filtered.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
 
   const columns = [
     {
@@ -227,7 +152,10 @@ const OrdersPage = () => {
       render: (row: TOrder) => (
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setSelectedOrder(row)}
+            onClick={() => {
+              setSelectedOrder(row);
+              setSelectedStatus("");
+            }}
             className="text-gray-400 hover:text-primary transition"
             title="View"
           >
@@ -263,29 +191,27 @@ const OrdersPage = () => {
       </h2>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        {/* Search + Filter Tabs */}
-        <div className="flex items-center justify-between mb-5 gap-4">
-          <div className="relative w-72">
-            <input
-              type="text"
-              placeholder="Search orders..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-4 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary"
-            />
-          </div>
+        <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
+          <input
+            type="text"
+            placeholder="Search orders..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-64 px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary transition"
+          />
 
-          {/* Status tabs */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {statusTabs.map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${
-                  activeTab === tab
-                    ? "bg-primary text-white"
-                    : "text-gray-500 hover:bg-gray-100"
-                }`}
+                onClick={() => {
+                  setActiveTab(tab);
+                  setCurrentPage(1);
+                }}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${activeTab === tab ? "bg-primary text-white" : "text-gray-500 hover:bg-gray-100"}`}
               >
                 {tab}
               </button>
@@ -293,36 +219,89 @@ const OrdersPage = () => {
           </div>
         </div>
 
-        {/* Table */}
-        <GbTable columns={columns} data={filtered} />
-
-        {/* Pagination */}
-        <div className="flex justify-center gap-2 mt-6">
-          {[1, 2, 3, 4, 5].map((p) => (
-            <button
-              key={p}
-              className={`w-8 h-8 rounded-full text-sm font-medium transition ${
-                p === 1
-                  ? "bg-primary text-white"
-                  : "text-gray-500 hover:bg-gray-100"
-              }`}
-            >
-              {p}
-            </button>
-          ))}
-          <button className="w-8 h-8 rounded-full bg-gray-800 text-white text-sm flex items-center justify-center">
-            →
-          </button>
-        </div>
+        <GbTable columns={columns} data={paginated} />
+        <GbPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* Order Detail Modal */}
-      {selectedOrder && (
-        <OrderModal
-          order={selectedOrder}
-          onClose={() => setSelectedOrder(null)}
-        />
-      )}
+      <GbModal
+        isOpen={!!selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        title="Order Management"
+      >
+        {selectedOrder && (
+          <div className="flex flex-col gap-3 text-sm">
+            {[
+              { label: "Order ID", value: selectedOrder.orderId },
+              { label: "User name", value: selectedOrder.user },
+              { label: "Details", value: selectedOrder.details },
+              { label: "Total Cost", value: `$${selectedOrder.total}` },
+              { label: "Order date", value: selectedOrder.date },
+              { label: "Total Items", value: selectedOrder.items },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="flex justify-between items-center border-b border-gray-50 pb-2"
+              >
+                <span className="text-gray-400">{item.label}</span>
+                <span className="text-gray-700 font-medium">{item.value}</span>
+              </div>
+            ))}
+
+            <div className="flex justify-between items-center border-b border-gray-50 pb-2">
+              <span className="text-gray-400">Status</span>
+              <span
+                className={`font-medium capitalize ${statusColors[selectedOrder.status]}`}
+              >
+                {selectedOrder.status}
+              </span>
+            </div>
+
+            {/* Change Status dropdown */}
+            <div className="relative mt-1">
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="w-full flex items-center justify-between border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-600 hover:border-primary transition"
+              >
+                {selectedStatus || "Change Status"}
+                <span className="text-xs">▾</span>
+              </button>
+              {showDropdown && (
+                <div className="absolute top-full left-0 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10 mt-1">
+                  {statusOptions.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => {
+                        setSelectedStatus(s);
+                        setShowDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {selectedStatus && (
+              <button
+                onClick={() => {
+                  console.log("update status:", selectedStatus);
+                  setSelectedOrder(null);
+                }}
+                className="w-full bg-primary hover:bg-primary-dark text-white py-2.5 rounded-lg text-sm font-medium transition"
+              >
+                Update Status
+              </button>
+            )}
+          </div>
+        )}
+      </GbModal>
     </div>
   );
 };
